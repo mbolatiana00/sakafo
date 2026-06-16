@@ -18,20 +18,24 @@ import com.example.sakafo.ui.screen.auth.LoginScreenAuth
 import com.example.sakafo.ui.screen.auth.SignUpScreen
 import com.example.sakafo.ui.screen.auth.VerifyEmailScreen
 import com.example.sakafo.ui.screen.cart.CartManager
+import com.example.sakafo.ui.screen.cart.CartManager.restaurantId
 import com.example.sakafo.ui.screen.cart.CartScreen
-import com.example.sakafo.ui.screen.cart.CheckoutScreen          // ✅ nouveau
+import com.example.sakafo.ui.screen.cart.CheckoutScreen
 import com.example.sakafo.ui.screen.details.DishDetailScreen
 import com.example.sakafo.ui.screen.home.FoodDeliveryScreen
 import com.example.sakafo.ui.screen.notification.NotificationScreen
+import com.example.sakafo.ui.screen.orders.OrderDetailScreen  // ✅ nouveau
 import com.example.sakafo.ui.screen.orders.OrdersScreen
+import com.example.sakafo.ui.screen.payment.PaymentScreen
 import com.example.sakafo.ui.screen.splashscreen.LogoScreen
 import com.example.sakafo.ui.screen.splashscreen.SplashScreen
 import com.example.sakafo.viewmodel.AuthViewModel
 import com.example.sakafo.viewmodel.AuthViewModelFactory
+import com.example.sakafo.viewmodel.ForgotPasswordViewModel
+import com.example.sakafo.viewmodel.ForgotPasswordViewModelFactory
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 sealed class AuthScreen(val route: String) {
-
     object Logo           : AuthScreen("logo")
     object Splash         : AuthScreen("splash")
     object Login          : AuthScreen("login")
@@ -41,10 +45,16 @@ sealed class AuthScreen(val route: String) {
     object Home           : AuthScreen("home")
     object Notification   : AuthScreen("notifications")
     object Cart           : AuthScreen("cart")
-    object Checkout       : AuthScreen("checkout")               // ✅ nouveau
+    object Checkout       : AuthScreen("checkout")
     object Orders         : AuthScreen("orders")
+    object OrderDetail    : AuthScreen("order_detail/{orderId}") {  // ✅ nouveau
+        fun createRoute(orderId: Int) = "order_detail/$orderId"
+    }
     object DishDetail     : AuthScreen("dish_detail/{dishId}") {
         fun createRoute(dishId: String) = "dish_detail/$dishId"
+    }
+    object Payment : AuthScreen("payment/{orderId}/{amount}") {
+        fun createRoute(orderId: Int, amount: Double) = "payment/$orderId/$amount"
     }
 }
 
@@ -64,20 +74,26 @@ fun AuthNavigation(
         )
     )
 
+    val forgotPasswordViewModel: ForgotPasswordViewModel = viewModel(
+        factory = ForgotPasswordViewModelFactory(repository = AuthRepository())
+    )
+
     NavHost(
         navController    = navController,
         startDestination = startDestination
     ) {
-        composable(AuthScreen.Logo.route){
-            LogoScreen (
+
+        /* ═══════════════════ LOGO ═══════════════════ */
+        composable(AuthScreen.Logo.route) {
+            LogoScreen(
                 onFinished = {
                     navController.navigate(AuthScreen.Splash.route) {
                         popUpTo(AuthScreen.Logo.route) { inclusive = true }
                     }
                 }
             )
-
         }
+
         /* ═══════════════════ SPLASH ═══════════════════ */
         composable(AuthScreen.Splash.route) {
             SplashScreen(
@@ -133,8 +149,8 @@ fun AuthNavigation(
         /* ═══════════════════ FORGOT PASSWORD ═══════════════════ */
         composable(AuthScreen.ForgotPassword.route) {
             ForgotPasswordScreen(
-                onBackClick  = { navController.popBackStack() },
-                onResetClick = { navController.popBackStack() }
+                viewModel      = forgotPasswordViewModel,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 
@@ -170,7 +186,6 @@ fun AuthNavigation(
         composable(AuthScreen.Cart.route) {
             CartScreen(
                 onBackClick = { navController.popBackStack() },
-                // ✅ NE vide PAS le panier ici — c'est CheckoutScreen qui le fait après succès API
                 onCheckout  = { navController.navigate(AuthScreen.Checkout.route) }
             )
         }
@@ -179,23 +194,40 @@ fun AuthNavigation(
         composable(AuthScreen.Checkout.route) {
             val userId = userPreferences.getUserId() ?: -1
             CheckoutScreen(
-                userId      = userId,
-                onBackClick = { navController.popBackStack() },
-                // ✅ Succès : efface Cart + Checkout de la pile, va sur Orders
-                onOrderSuccess = {
-                    navController.navigate(AuthScreen.Orders.route) {
+                userId       = userId,
+                restaurantId = restaurantId,
+                onBackClick  = { navController.popBackStack() },
+                onOrderSuccess = { orderId, amount ->
+                    navController.navigate(AuthScreen.Payment.createRoute(orderId, amount)) {
                         popUpTo(AuthScreen.Cart.route) { inclusive = true }
                     }
                 }
             )
         }
+        /* ═══════════════════ ORDERS ═══════════════════*/
+        // Dans AuthNavigation.kt
 
-        /* ═══════════════════ ORDERS ═══════════════════ */
+// 1. Ajoutez l'import en haut du fichier
+
+// 2. Décommentez et vérifiez le bloc ORDERS
         composable(AuthScreen.Orders.route) {
             val userId = userPreferences.getUserId() ?: -1
-            OrdersScreen(
-                onBackClick = { navController.popBackStack() },
-                userId      = userId
+            OrdersScreen(                    // ✅ OrdersScreen avec "s"
+                onBackClick  = { navController.popBackStack() },
+                userId       = userId,
+                onOrderClick = { orderId ->
+                    navController.navigate(AuthScreen.OrderDetail.createRoute(orderId))
+                }
+            )
+        }        /* ═══════════════════ ORDER DETAIL ═══════════════════ */       // ✅ nouveau
+        composable(
+            route     = AuthScreen.OrderDetail.route,
+            arguments = listOf(navArgument("orderId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val orderId = backStackEntry.arguments?.getInt("orderId") ?: -1
+            OrderDetailScreen(
+                orderId     = orderId,
+                onBackClick = { navController.popBackStack() }
             )
         }
 
@@ -217,6 +249,26 @@ fun AuthNavigation(
                     }
                 )
             }
+        }
+        composable(
+            route     = AuthScreen.Payment.route,
+            arguments = listOf(
+                navArgument("orderId") { type = NavType.IntType },
+                navArgument("amount")  { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val orderId = backStackEntry.arguments?.getInt("orderId") ?: -1
+            val amount  = backStackEntry.arguments?.getString("amount")?.toDoubleOrNull() ?: 0.0
+            PaymentScreen(
+                orderId          = orderId,
+                amount           = amount,
+                onBackClick      = { navController.popBackStack() },
+                onPaymentSuccess = {
+                    navController.navigate(AuthScreen.Orders.route) {
+                        popUpTo(AuthScreen.Checkout.route) { inclusive = true }
+                    }
+                }
+            )
         }
     }
 }

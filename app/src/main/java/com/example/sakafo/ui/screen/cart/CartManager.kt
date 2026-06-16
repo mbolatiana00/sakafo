@@ -12,7 +12,8 @@ data class CartItem(
 
 // ── Singleton global du panier ────────────────────────────────────────────────
 object CartManager {
-
+    val restaurantId: Int
+        get() = _cartItems.firstOrNull()?.dish?.restaurantId ?: 1
     private val _cartItems = mutableStateListOf<CartItem>()
     val cartItems: List<CartItem> get() = _cartItems
 

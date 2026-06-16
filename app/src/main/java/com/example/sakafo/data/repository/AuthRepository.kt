@@ -1,8 +1,10 @@
 package com.example.sakafo.data.repository
 
+import com.example.sakafo.data.Api.model.ForgotPasswordRequest
 import com.example.sakafo.data.Api.model.LoggedUser
 import com.example.sakafo.data.Api.model.LoginRequest
 import com.example.sakafo.data.Api.model.RegisterRequest
+import com.example.sakafo.data.Api.model.ResetPasswordRequest
 import com.example.sakafo.data.Api.model.VerifyEmailRequest
 import com.example.sakafo.data.Api.retrofit.RetrofitClient
 import kotlinx.coroutines.Dispatchers
@@ -67,9 +69,16 @@ class AuthRepository {
             val response = apiService.login(request)
 
             if (response.isSuccessful) {
-                response.body()?.user?.let {
-                    Result.success(it)
-                } ?: Result.failure(Exception("Aucune donnée reçue"))
+                val body = response.body()
+                val user = body?.user
+                val token = body?.token  // ✅ récupère le token
+
+                if (user != null && token != null) {
+                    // ✅ retourne user avec le token inclus
+                    Result.success(user.copy(token = token))
+                } else {
+                    Result.failure(Exception("Aucune donnée reçue"))
+                }
             } else {
                 val errorMsg = when (response.code()) {
                     403 -> "Veuillez vérifier votre email d'abord"
@@ -99,6 +108,33 @@ class AuthRepository {
                 Result.failure(e)
             }
         }
+
+    suspend fun forgotPassword(email : String): Result<String>{
+        return try {
+            val response = apiService.forgotPassword(ForgotPasswordRequest(email))
+            if (response.isSuccessful) {
+                Result.success(response.body()?.message ?: "Code envoyé")
+            } else {
+                Result.failure(Exception(response.errorBody()?.string() ?: "Erreur"))
+            }
+        }catch (e: Exception){
+            Result.failure(e)
+        }
+
+    }
+    suspend fun  resetPassword(email: String, code: String, newPassword : String): Result<String>{
+        return try {
+            val response = apiService.resetPassword(ResetPasswordRequest(email, code, newPassword))
+            if (response.isSuccessful) {
+                Result.success(response.body()?.message ?: "Mot de passe réinitialisé")
+            } else {
+                Result.failure(Exception(response.errorBody()?.string() ?: "Erreur"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
 
     suspend fun logout(): Result<String> =
         withContext(Dispatchers.IO) {

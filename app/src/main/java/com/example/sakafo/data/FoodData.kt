@@ -7,6 +7,7 @@ data class Dish(
     val price: Double,
     val rating: Double,
     val restaurant: String,
+    val restaurantId: Int,
     val preparationTime: String,
     val category: String
 )
@@ -34,6 +35,7 @@ object FoodData {
             price = 12.99,
             rating = 4.8,
             restaurant = "Burger King",
+            restaurantId = 1,           // ✅ id réel en base
             preparationTime = "15 min",
             category = "Burger"
         ),
@@ -44,6 +46,7 @@ object FoodData {
             price = 10.99,
             rating = 4.6,
             restaurant = "Pizza Hut",
+            restaurantId = 2,           // ✅
             preparationTime = "20 min",
             category = "Pizza"
         ),
@@ -54,6 +57,7 @@ object FoodData {
             price = 18.99,
             rating = 4.9,
             restaurant = "Sushi Place",
+            restaurantId = 3,           // ✅
             preparationTime = "25 min",
             category = "Sushi"
         ),
@@ -64,6 +68,7 @@ object FoodData {
             price = 9.99,
             rating = 4.5,
             restaurant = "Health Food",
+            restaurantId = 4,           // ✅
             preparationTime = "10 min",
             category = "Salade"
         ),
@@ -74,6 +79,7 @@ object FoodData {
             price = 5.99,
             rating = 4.7,
             restaurant = "Pâtisserie",
+            restaurantId = 5,           // ✅
             preparationTime = "5 min",
             category = "Dessert"
         ),
@@ -84,6 +90,7 @@ object FoodData {
             price = 11.99,
             rating = 4.6,
             restaurant = "Burger King",
+            restaurantId = 1,           // ✅ même restaurant que Burger Déluxe
             preparationTime = "12 min",
             category = "Burger"
         ),
@@ -94,6 +101,7 @@ object FoodData {
             price = 12.99,
             rating = 4.7,
             restaurant = "Pizza Hut",
+            restaurantId = 2,           // ✅ même restaurant que Pizza Margherita
             preparationTime = "22 min",
             category = "Pizza"
         ),
@@ -104,6 +112,7 @@ object FoodData {
             price = 8.99,
             rating = 4.8,
             restaurant = "Sushi Place",
+            restaurantId = 3,           // ✅ même restaurant que Sushi Mix
             preparationTime = "15 min",
             category = "Sushi"
         )

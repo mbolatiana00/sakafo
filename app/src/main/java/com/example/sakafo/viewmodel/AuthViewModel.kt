@@ -39,7 +39,6 @@ class AuthViewModel(
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState
 
-    // ─── REGISTER ─────────────────────────────────────────────────────────────
     fun register(name: String, email: String, phone: String, password: String) {
         if (name.isBlank()) { _authState.value = AuthState.Error("Nom requis"); return }
         if (email.isBlank()) { _authState.value = AuthState.Error("Email requis"); return }
@@ -62,7 +61,6 @@ class AuthViewModel(
         }
     }
 
-    // ─── VERIFY EMAIL ──────────────────────────────────────────────────────────
     fun verifyEmail(email: String, code: String) {
         if (code.isBlank() || code.length != 6) {
             _authState.value = AuthState.Error("Le code doit contenir 6 chiffres")
@@ -81,7 +79,7 @@ class AuthViewModel(
         }
     }
 
-    // ─── LOGIN ─────────────────────────────────────────────────────────────────
+
     fun login(email: String, password: String) {
         if (email.isBlank()) { _authState.value = AuthState.Error("Email requis"); return }
         if (!AuthValidator.isValidEmail(email)) { _authState.value = AuthState.Error("Email invalide"); return }
@@ -92,13 +90,13 @@ class AuthViewModel(
             repository.login(email, password)
                 .onSuccess { user ->
                     userPreferences?.saveAuthData(
-                        token = "",
+                        token =user.token ?: "",
                         userId = user.id,
                         name = user.name,
                         email = user.email,
                         phone = user.phone ?: ""
                     )
-                    _authState.value = AuthState.LoginSuccess(user, null)
+                    _authState.value = AuthState.LoginSuccess(user, user.token)
                 }
                 .onFailure { exception ->
                     _authState.value = AuthState.Error(exception.message ?: "Erreur de connexion")
@@ -106,7 +104,6 @@ class AuthViewModel(
         }
     }
 
-    // ─── LOGOUT ────────────────────────────────────────────────────────────────
     fun logout() {
         viewModelScope.launch {
             userPreferences?.clearAuthData()
@@ -117,6 +114,8 @@ class AuthViewModel(
     fun resetState() {
         _authState.value = AuthState.Idle
     }
+
+
 }
 
 class AuthViewModelFactory(

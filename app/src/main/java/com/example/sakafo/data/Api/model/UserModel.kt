@@ -55,7 +55,8 @@ data class LoggedUser(
     val email: String,
     val phone: String? = null,
     val role: String,
-    val isVerified: Boolean     // ✅ ajouté
+    val isVerified: Boolean,
+    val token: String? = null
 )
 
 // ─── RESPONSE MODELS - PROFILE ───────────────────────────────────────────────
@@ -75,4 +76,13 @@ data class ProfileResponse(
 
 data class ErrorResponse(
     val message: String
+)
+
+data class ForgotPasswordRequest(val email: String)
+data class ResetPasswordRequest(val email: String, val code: String, val newPassword: String)
+data class MessageResponse(val message: String)
+data class ResetPasswordResponse(
+    val success : Boolean,
+    val message : String,
+
 )

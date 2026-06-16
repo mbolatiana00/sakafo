@@ -2,6 +2,7 @@ package com.example.sakafo.data.repository
 
 import com.example.sakafo.data.Api.model.CreateOrderRequest
 import com.example.sakafo.data.Api.model.Order
+import com.example.sakafo.data.Api.model.OrderDetailResponse
 import com.example.sakafo.data.Api.model.OrderStatus
 import com.example.sakafo.data.Api.model.UpdateOrderStatusRequest
 

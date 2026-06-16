@@ -1,9 +1,12 @@
 package com.example.sakafo.data.Api.model
 
-import com.google.gson.annotations.SerializedName
-
 enum class OrderStatus {
-    PENDING, CONFIRMED, IN_PROGRESS, DELIVERED, CANCELED
+    PENDING,
+    CONFIRMED,
+    PICKED_UP,    // ✅ remplace IN_PROGRESS
+    IN_TRANSIT,   // ✅ ajoute
+    DELIVERED,
+    CANCELED
 }
 
 // ✅ FIX : tous les champs non-primitifs passés en nullable
@@ -47,39 +50,72 @@ data class Delivery(
     val tracking: List<TrackingPoint>? = null
 )
 
-data class Payment(
-    val id: Int,
+
+
+// ── Requête création paiement ─────────────────────────────────────────────────
+data class CreatePaymentRequest(
+    val orderId: Int,
     val amount: Double,
-    val status: String,
-    val createdAt: String
+    val method: String   // "CASH", "CARD", "MOBILE_MONEY"
 )
 
+// ── Modèle Payment ────────────────────────────────────────────────────────────
+data class Payment(
+    val id: Int,
+    val orderId: Int,
+    val amount: Double,
+    val method: String,
+    val status: String,
+    val paidAt: String? = null
+)
+
+// ── Réponse API création paiement ─────────────────────────────────────────────
+data class CreatePaymentResponse(
+    val message: String?,
+    val payment: Payment?
+)
+data class CreateOrderRequest(
+    val userId: Int,
+    val pickupAddress: String,
+    val deliveryAddress: String,
+    val price: Double,
+    val restaurantId: Int
+)
+
+data class UpdateOrderStatusRequest(val status: OrderStatus)
+// ── Réponse création commande ─────────────────────────────────────────────────
+data class CreateOrderResponse(
+    val message: String?,
+    val order: Order?
+)
+data class UpdateOrderResponse(
+    val message: String?,
+    val order: Order?   // ✅ "order" au lieu de "data"
+)
+data class OrderDetailResponse(
+    val message: String? = null,
+    val order: Order?    = null,  // ✅ "order" au lieu de "data"
+    val data: Order?     = null   // ✅ garde "data" au cas où
+)
+// ── Modèle Order corrigé ──────────────────────────────────────────────────────
 data class Order(
     val id: Int,
     val userId: Int,
-    // ✅ FIX : nullable pour éviter crash si l'API renvoie null ou champ absent
     val pickupAddress: String?,
     val deliveryAddress: String?,
-    val price: Double,
-    // ✅ FIX : status nullable + valeur par défaut pour éviter
-    // JsonDataException si l'API renvoie une valeur inconnue
+    val totalPrice: Double,        // ✅ était "price", l'API retourne "totalPrice"
     val status: OrderStatus?,
     val createdAt: String?,
     val updatedAt: String?,
     val user: UserSummary? = null,
     val delivery: Delivery? = null,
-    val payment: Payment? = null
+    val payment: Order? = null
 )
 
-data class CreateOrderRequest(
-    val userId: Int,
-    val pickupAddress: String,
-    val deliveryAddress: String,
-    val price: Double
-)
-
-data class UpdateOrderStatusRequest(val status: OrderStatus)
-
-// ✅ FIX : data nullable dans les réponses pour éviter crash si body mal formé
 data class OrderResponse(val data: Order?)
-data class OrderListResponse(val data: List<Order>?)
+// ✅ remplace l'ancien
+data class OrderListResponse(
+    val count: Int?,
+    val orders: List<Order>?  // "orders" au lieu de "data"
+)
+// ✅ FIX : data nullable dans les réponses pour éviter crash si body mal formé
